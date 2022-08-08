@@ -1,0 +1,10 @@
+spring:
+  application:
+    name: demo-curso-mongodb
+  data:
+    mongodb:
+      uri: mongodb://localhost:27017/bd-demo
+
+server:
+  port: 8081
+
