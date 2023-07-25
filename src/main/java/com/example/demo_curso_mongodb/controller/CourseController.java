@@ -3,7 +3,9 @@ package com.example.demo_curso_mongodb.controller;
 
 import com.example.demo_curso_mongodb.model.Course;
 import com.example.demo_curso_mongodb.repository.CourseRepository;
+
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -16,11 +18,16 @@ import java.util.Optional;
 @RestController
 @RequestMapping(value = "/courses")
 public class CourseController {
+	
+	@Value("${info.project.name}")
+	private String valueFromFile;
+	
 	@Autowired
 	CourseRepository repo;
 
 	@GetMapping("/hola")
 	public String index(){
+		System.out.println("Valor desde el properties: " + valueFromFile);
 
 		return "Hello from Azure Deployment Demo-mongoDb!!!!";
 	}
