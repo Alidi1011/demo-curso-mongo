@@ -11,5 +11,4 @@ server:
 info:
   project:
     name: Project using MongoDB
-    prueba: Prueba Name
 
