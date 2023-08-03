@@ -2,14 +2,18 @@ package com.example.demo_curso_mongodb.controller;
 
 
 import com.example.demo_curso_mongodb.model.Course;
+import com.example.demo_curso_mongodb.model.CourseJPA;
 import com.example.demo_curso_mongodb.repository.CourseRepository;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.RestTemplate;
+
 
 import java.util.List;
 import java.util.Optional;
@@ -57,4 +61,25 @@ public class CourseController {
 	public void deleteCourse(@PathVariable String id) {
 		repo.deleteById(id);
 	}
+	
+	@GetMapping("/coursesJPA")	
+	public CourseJPA getCoursesFromJPA() {
+		RestTemplate restTemplate = new RestTemplate();
+		String fooResourceUrl
+		  = "http://localhost:8088/courses";
+		/*ResponseEntity<String> response
+		  = restTemplate.getForEntity(fooResourceUrl, String.class);
+		  System.out.println(response.getBody());
+		  */
+		/*CourseJPA foo = restTemplate
+				  .getForObject(fooResourceUrl + "/1", CourseJPA.class);*/
+		
+		ResponseEntity<CourseJPA> response = restTemplate
+				  .exchange(fooResourceUrl +  "/2", HttpMethod.GET, null, CourseJPA.class);
+		System.out.println(response.getStatusCode());
+		System.out.println(HttpStatus.OK);
+		  
+		return response.getBody();
+	}
+	
 }
