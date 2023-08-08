@@ -6,6 +6,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Base64;
 import java.util.HashMap;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -26,10 +27,11 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.example.demo_curso_mongodb.model.File;
+import com.example.demo_curso_mongodb.model.Fil;
 import com.example.demo_curso_mongodb.service.FileServiceInterface;
 
 import lombok.extern.slf4j.Slf4j;
+import okhttp3.FormBody;
 import okhttp3.HttpUrl;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -52,7 +54,7 @@ public class FileController {
 
 	
 	@PostMapping("/upload")
-	public String uploadFile(@RequestBody File file) throws Exception {
+	public String uploadFile(@RequestBody Fil file) throws Exception {
 	   
 	    byte[] decodedFile = Base64.getDecoder().decode(file.getBase64().getBytes(StandardCharsets.UTF_8));
 	 
@@ -111,7 +113,7 @@ public class FileController {
 	}
 	
 	@PostMapping("/download")
-	public void downloadFile(@RequestBody File file) throws Exception {	  
+	public void downloadFile(@RequestBody Fil file) throws Exception {	  
 	 
 		String bin = "124";
 		
@@ -125,13 +127,13 @@ public class FileController {
 	}
 	
 	@PostMapping("/downloadPrueba")
-	public File downloadFile1(@RequestBody File file) throws Exception {
+	public Fil downloadFile1(@RequestBody Fil file) throws Exception {
 		fileService.download(file);
 		return file;
 	}
 	
 	@PostMapping("/downloadPrueba2")
-	public File downloadFile2(@RequestBody File file) throws Exception {
+	public Fil downloadFile2(@RequestBody Fil file) throws Exception {
 		
 		OkHttpClient http = new OkHttpClient();
 		
@@ -165,5 +167,30 @@ public class FileController {
 		
 		file.setBase64(base64);
 		return file;
+	}
+	
+	@PostMapping("/downloadPrueba3")
+	public Fil downloadFile3(@RequestBody Fil file) throws Exception {
+		return fileService.donwloadWithHttp3(file);
+	}
+	
+	@PostMapping("/uploadAzure")
+	public Fil uploadWithAzure(@RequestBody Fil file) throws Exception {
+		return fileService.uploadWithAzure(file);
+	}
+	
+	@PostMapping("/uploadAzureInZip")
+	public Fil uploadWithAzureInZip(@RequestBody Fil file) throws Exception {
+		return fileService.uploadWithAzureInZip(file);
+	}
+	
+	@PostMapping("/uploadAzureInZip2")
+	public Fil uploadWithAzureInZip(@RequestBody List<Fil> file) throws Exception {
+		return fileService.uploadWithAzureInZip2(file);
+	}
+	
+	@PostMapping("/downloadAzure")
+	public Fil downloadAzure(@RequestBody Fil file) throws Exception {
+		return fileService.downloadWithAzure(file);
 	}
 }
