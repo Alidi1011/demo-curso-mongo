@@ -342,6 +342,12 @@ public class FileServiceImpl extends FileClient implements FileServiceInterface 
 			log.info("pathZip: " + pathZip);
 
 			String destinationPath = pathLocalZip.concat(attachmentZipName);
+			
+			File zipFolder = new File(pathLocalZip);
+			if(!zipFolder.exists()) {
+				zipFolder.mkdirs();
+			}
+			
 			File zipFile = new File(destinationPath);
 			FileOutputStream fos = new FileOutputStream(zipFile);
 			ZipOutputStream zipOut = new ZipOutputStream(fos);
