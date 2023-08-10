@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -61,8 +62,8 @@ public class FileServiceImpl extends FileClient implements FileServiceInterface 
 
 	private static final ObjectMapper mapper = new ObjectMapper();
 
-	private static final String pathLocalZip = "src/main/resources/images/";
-	private static final String attachmentName = "attachments-";
+	private static final String PATH_LOCAL_ZIP = "src/main/resources/images/";
+	private static final String ATTACHMENT_NAME = "attachments-";
 
 	@Override
 	public Fil download(Fil file) {
@@ -97,7 +98,7 @@ public class FileServiceImpl extends FileClient implements FileServiceInterface 
 
 		String imageName = file.getName();
 
-		String pathImage = "/evidencias/".concat(file.getFolderName()).concat("/").concat(imageName);
+		String pathImage = pathName.concat(file.getFolderName()).concat("/").concat(imageName);
 
 		CloudBlockBlob blockBlob = blobContainer.getBlockBlobReference(pathImage);
 
@@ -116,7 +117,7 @@ public class FileServiceImpl extends FileClient implements FileServiceInterface 
 		log.info("blockBlob.properties.length: " + blockBlob.getProperties().getLength());
 
 		Fil fileResponse = new Fil();
-		fileResponse.setUrl(blockBlob.getName());
+		fileResponse.setUrl(blockBlob.getUri().toString());
 		fileResponse.setName(imageName);
 
 		return fileResponse;
@@ -124,13 +125,13 @@ public class FileServiceImpl extends FileClient implements FileServiceInterface 
 
 	@Override
 	public Fil downloadWithAzure(Fil file) throws Exception {
+		
 		CloudStorageAccount storageAccount = CloudStorageAccount.parse(this.storageConnection);
-
 		CloudBlobClient blobClient = storageAccount.createCloudBlobClient();
-		CloudBlobContainer blobContainer = blobClient.getContainerReference(containerName);
-
-		CloudBlockBlob blockBlob = blobContainer.getBlockBlobReference(file.getUrl());
-
+		CloudBlobContainer blobContainer = blobClient.getContainerReference(this.containerName);
+		CloudBlockBlob blockBlob1 = new CloudBlockBlob(URI.create(file.getUrl()));		
+		CloudBlockBlob blockBlob = blobContainer.getBlockBlobReference(blockBlob1.getName());
+		
 		Fil fileResponse = null;
 
 		if (blockBlob.exists()) {
@@ -145,8 +146,12 @@ public class FileServiceImpl extends FileClient implements FileServiceInterface 
 
 			log.info("base64: " + base64);
 			log.info("blob container name: " + blobContainer.getName());
-			log.info("prueba name: " + blockBlob.getName());
+			log.info("prueba blockBlob1 name: " + blockBlob1.getName());
+			log.info("prueba blockBlob name: " + blockBlob.getName());
 			log.info("length: " + blockBlob.getProperties().getLength());
+			log.info("URI: " + blockBlob.getUri());
+			log.info("getUrl enviado: " + file.getUrl());
+
 
 			fileResponse = new Fil();
 			fileResponse.setBase64(base64);
@@ -251,10 +256,10 @@ public class FileServiceImpl extends FileClient implements FileServiceInterface 
 		CloudStorageAccount storageAccount = CloudStorageAccount.parse(this.storageConnection);
 
 		CloudBlobClient blobClient = storageAccount.createCloudBlobClient();
-		CloudBlobContainer blobContainer = blobClient.getContainerReference(containerName);
+		CloudBlobContainer blobContainer = blobClient.getContainerReference(this.containerName);
 
 		String imageName = file.getName();
-		String pathZip = "/evidencias/".concat(file.getFolderName()).concat("/").concat(uuid.toString() + ".zip");
+		String pathZip = this.pathName.concat(file.getFolderName()).concat("/").concat(uuid.toString() + ".zip");
 
 		CloudBlockBlob blockBlob = blobContainer.getBlockBlobReference(pathZip);
 
@@ -262,11 +267,10 @@ public class FileServiceImpl extends FileClient implements FileServiceInterface 
 
 		byte[] decodedFile = Base64.getDecoder().decode(file.getBase64().getBytes(StandardCharsets.UTF_8));
 		InputStream inputStream = new ByteArrayInputStream(decodedFile);
-		InputStream inputStream2 = new ByteArrayInputStream(decodedFile);
 
 		// ZIP PRUEBAS
 		// Dirección y nombre del zip a crear
-		String dest = "C:/Users/aarteagq/Documents/imagenes/prueba009.zip";
+		String dest = "C:/Users/aarteagq/Documents/imagenes/prueba123.zip";
 		File zipFile = new File(dest);
 		FileOutputStream fos = new FileOutputStream(zipFile);
 		ZipOutputStream zipOut = new ZipOutputStream(fos);
@@ -279,7 +283,7 @@ public class FileServiceImpl extends FileClient implements FileServiceInterface 
 		 */
 
 		// Buscamos el archivo fisico
-		ZipEntry zipEntry = new ZipEntry("imagen.jpeg");
+		ZipEntry zipEntry = new ZipEntry(file.getName()); //considerar la extension del archivo que se va a zipear
 		// Agregamos la entrada del zip con el archivo al archivo de salida.
 		zipOut.putNextEntry(zipEntry);
 
@@ -292,23 +296,10 @@ public class FileServiceImpl extends FileClient implements FileServiceInterface 
 		zipOut.closeEntry();
 		// inputStream.close();
 
-		ZipEntry zipEntry2 = new ZipEntry("imagen2.jpeg");
-		zipOut.putNextEntry(zipEntry2);
-
-		byte[] bytes2 = new byte[1024];
-		int length2;
-		while ((length2 = inputStream2.read(bytes2)) >= 0) {
-			zipOut.write(bytes2, 0, length2);
-		}
-
-		zipOut.closeEntry();
-		// inputStream2.close();
-
 		// Cerramos los recursos.
 		zipOut.close();
 
 		// ZIP PRUEBAS
-
 		blockBlob.uploadFromFile(dest);
 
 		fos.close();
@@ -318,7 +309,7 @@ public class FileServiceImpl extends FileClient implements FileServiceInterface 
 		log.info("blockBlob.properties.length: " + blockBlob.getProperties().getLength());
 
 		Fil fileResponse = new Fil();
-		fileResponse.setUrl(blockBlob.getName());
+		fileResponse.setUrl(blockBlob.getUri().toString());
 		fileResponse.setName(imageName);
 
 		return fileResponse;
@@ -328,27 +319,33 @@ public class FileServiceImpl extends FileClient implements FileServiceInterface 
 	public Fil uploadWithAzureInZip2(List<Fil> files) {
 
 		Fil fileResponse = new Fil();
-		String folderName = "PANGEA-22635";
-		String attachmentZipName = attachmentName.concat(folderName.toLowerCase()).concat(".zip");
+		String folderName = "PANGEA-7777";
+		String attachmentZipName = ATTACHMENT_NAME.concat(folderName.toLowerCase()).concat(".zip");
 
 		try {
 
 			CloudStorageAccount storageAccount = CloudStorageAccount.parse(this.storageConnection);
 			CloudBlobClient blobClient = storageAccount.createCloudBlobClient();
 			CloudBlobContainer blobContainer = blobClient.getContainerReference(containerName);
-			String pathZip = pathName.concat(folderName).concat("/").concat(attachmentZipName);
+			String pathZip = this.pathName.concat(folderName).concat("/").concat(attachmentZipName);
 			CloudBlockBlob blockBlob = blobContainer.getBlockBlobReference(pathZip);
 
-			log.info("pathZip: " + pathZip);
+			log.info("PATHZIP: " + pathZip);
 
-			String destinationPath = pathLocalZip.concat(attachmentZipName);
+			String destinationPath = PATH_LOCAL_ZIP.concat(attachmentZipName);
 			
-			File zipFolder = new File(pathLocalZip);
+			File zipFolder = new File(PATH_LOCAL_ZIP);
 			if(!zipFolder.exists()) {
 				zipFolder.mkdirs();
 			}
 			
+		    //zipFolder.delete();
+			
 			File zipFile = new File(destinationPath);
+			
+			log.info("zip file absolute path: "  + zipFile.getCanonicalPath()); 
+			log.info("zip file absolute path: "  + zipFile.getAbsolutePath()); 
+			
 			FileOutputStream fos = new FileOutputStream(zipFile);
 			ZipOutputStream zipOut = new ZipOutputStream(fos);
 
@@ -375,9 +372,14 @@ public class FileServiceImpl extends FileClient implements FileServiceInterface 
 			}
 		
 			zipOut.close();
-			blockBlob.uploadFromFile(destinationPath);
 			fos.close();
-			zipFile.delete();
+			blockBlob.uploadFromFile(destinationPath);
+			
+		    if(zipFile.delete()) {
+		    	log.info("File se borro correctamente");
+		    }else {
+		    	log.info("File no se borro correctamente");
+		    }
 			
 			fileResponse.setUrl(blockBlob.getUri().toString());
 			fileResponse.setName(attachmentZipName);
