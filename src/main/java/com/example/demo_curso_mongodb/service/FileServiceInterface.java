@@ -15,4 +15,5 @@ public interface FileServiceInterface {
 	public Fil donwloadWithHttp3(Fil file) throws Exception;
 	public Fil uploadWithAzureInZip(Fil file) throws InvalidKeyException, URISyntaxException, StorageException, IOException;
 	public Fil uploadWithAzureInZip2(List<Fil> file);
+	public Fil uploadToJira(Fil file) throws IOException;
 }

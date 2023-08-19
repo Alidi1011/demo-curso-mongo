@@ -11,14 +11,9 @@ server:
 info:
   project:
     name: Project using MongoDB
-
-azure:
-  storage:
-    connection-string: ${AZURE_CONNECTION_STRING}
-    container-name: ${AZURE_CONTAINER_NAME}
-    path-name: ${AZURE_PATH_NAME}
     
-toa:
+ta:
   client-id: ${CLIENT_ID}
   client-secret: ${CLIENT_SECRET}
   url-token: ${URL_TOKEN}
+  

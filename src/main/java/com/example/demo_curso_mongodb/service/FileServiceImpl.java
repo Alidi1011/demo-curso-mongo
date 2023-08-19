@@ -17,12 +17,15 @@ import java.security.InvalidKeyException;
 import java.util.Base64;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
+import com.example.demo_curso_mongodb.model.ResponseUpload;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import com.example.demo_curso_mongodb.model.Fil;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.microsoft.azure.storage.CloudStorageAccount;
 import com.microsoft.azure.storage.StorageException;
@@ -33,6 +36,8 @@ import com.microsoft.azure.storage.blob.CloudBlockBlob;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.FormBody;
 import okhttp3.HttpUrl;
+import okhttp3.MediaType;
+import okhttp3.MultipartBody;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
@@ -51,14 +56,32 @@ public class FileServiceImpl extends FileClient implements FileServiceInterface 
 	@Value("${azure.storage.path-name}")
 	private String pathName;
 
-	@Value("${toa.client-id}")
+	@Value("${ta.client-id}")
 	private String clientId;
 
-	@Value("${toa.client-secret}")
+	@Value("${ta.client-secret}")
 	private String clientSecret;
 
-	@Value("${toa.url-token}")
+	@Value("${ta.url-token}")
 	private String urlToken;
+
+	@Value("${jira.host}")
+	private String jiraHost;
+
+	@Value("${jira.path}")
+	private String jiraPath;
+
+	@Value("${jira.issue.key}")
+	private String jiraIssueKey;
+	
+	@Value("${jira.basicAuth.clientId}")
+	private String jiraClientId;
+	
+	@Value("${jira.basicAuth.clientSecret}")
+	private String jiraClientSecret;
+	
+	@Value("${jira.enable.unsecure.httpclient}")
+	private String isUnsecureEnable;
 
 	private static final ObjectMapper mapper = new ObjectMapper();
 
@@ -125,13 +148,13 @@ public class FileServiceImpl extends FileClient implements FileServiceInterface 
 
 	@Override
 	public Fil downloadWithAzure(Fil file) throws Exception {
-		
+
 		CloudStorageAccount storageAccount = CloudStorageAccount.parse(this.storageConnection);
 		CloudBlobClient blobClient = storageAccount.createCloudBlobClient();
 		CloudBlobContainer blobContainer = blobClient.getContainerReference(this.containerName);
-		CloudBlockBlob blockBlob1 = new CloudBlockBlob(URI.create(file.getUrl()));		
+		CloudBlockBlob blockBlob1 = new CloudBlockBlob(URI.create(file.getUrl()));
 		CloudBlockBlob blockBlob = blobContainer.getBlockBlobReference(blockBlob1.getName());
-		
+
 		Fil fileResponse = null;
 
 		if (blockBlob.exists()) {
@@ -152,7 +175,6 @@ public class FileServiceImpl extends FileClient implements FileServiceInterface 
 			log.info("URI: " + blockBlob.getUri());
 			log.info("getUrl enviado: " + file.getUrl());
 
-
 			fileResponse = new Fil();
 			fileResponse.setBase64(base64);
 			fileResponse.setName(file.getName());
@@ -167,7 +189,11 @@ public class FileServiceImpl extends FileClient implements FileServiceInterface 
 	@Override
 	public Fil donwloadWithHttp3(Fil file) throws IOException {
 
-		OkHttpClient http = new OkHttpClient();
+		OkHttpClient http = new OkHttpClient.Builder()
+				.hostnameVerifier((hostname, session) -> true)
+				.connectTimeout(Long.parseLong("50000"), TimeUnit.SECONDS).build();
+		
+		log.info("HOSTNAME VERIFIER: " + false);
 
 		HttpUrl.Builder urlBuilder = HttpUrl.parse(file.getUrl()).newBuilder();
 		String url = urlBuilder.toString();
@@ -179,7 +205,7 @@ public class FileServiceImpl extends FileClient implements FileServiceInterface 
 		String oauthAuthorization = this.getOauthAuthorization();
 		String basicAuthorization = this.getBasicAuthorization();
 
-		Request request = new Request.Builder().url(url).get().header("Authorization", oauthAuthorization)
+		Request request = new Request.Builder().url(url).get().header("Authorization", basicAuthorization)
 				.header("Accept", "application/octet-stream").build();
 
 		log.info("[REQUEST] REQUEST: {}", request);
@@ -283,7 +309,7 @@ public class FileServiceImpl extends FileClient implements FileServiceInterface 
 		 */
 
 		// Buscamos el archivo fisico
-		ZipEntry zipEntry = new ZipEntry(file.getName()); //considerar la extension del archivo que se va a zipear
+		ZipEntry zipEntry = new ZipEntry(file.getName()); // considerar la extension del archivo que se va a zipear
 		// Agregamos la entrada del zip con el archivo al archivo de salida.
 		zipOut.putNextEntry(zipEntry);
 
@@ -333,19 +359,19 @@ public class FileServiceImpl extends FileClient implements FileServiceInterface 
 			log.info("PATHZIP: " + pathZip);
 
 			String destinationPath = PATH_LOCAL_ZIP.concat(attachmentZipName);
-			
+
 			File zipFolder = new File(PATH_LOCAL_ZIP);
-			if(!zipFolder.exists()) {
+			if (!zipFolder.exists()) {
 				zipFolder.mkdirs();
 			}
-			
-		    //zipFolder.delete();
-			
+
+			// zipFolder.delete();
+
 			File zipFile = new File(destinationPath);
-			
-			log.info("zip file absolute path: "  + zipFile.getCanonicalPath()); 
-			log.info("zip file absolute path: "  + zipFile.getAbsolutePath()); 
-			
+
+			log.info("zip file absolute path: " + zipFile.getCanonicalPath());
+			log.info("zip file absolute path: " + zipFile.getAbsolutePath());
+
 			FileOutputStream fos = new FileOutputStream(zipFile);
 			ZipOutputStream zipOut = new ZipOutputStream(fos);
 
@@ -370,17 +396,17 @@ public class FileServiceImpl extends FileClient implements FileServiceInterface 
 				zipOut.closeEntry();
 				inputStream.close();
 			}
-		
+
 			zipOut.close();
 			fos.close();
 			blockBlob.uploadFromFile(destinationPath);
-			
-		    if(zipFile.delete()) {
-		    	log.info("File se borro correctamente");
-		    }else {
-		    	log.info("File no se borro correctamente");
-		    }
-			
+
+			if (zipFile.delete()) {
+				log.info("File se borro correctamente");
+			} else {
+				log.info("File no se borro correctamente");
+			}
+
 			fileResponse.setUrl(blockBlob.getUri().toString());
 			fileResponse.setName(attachmentZipName);
 			log.info("attachment uri: " + blockBlob.getUri());
@@ -390,5 +416,100 @@ public class FileServiceImpl extends FileClient implements FileServiceInterface 
 		}
 
 		return fileResponse;
+	}
+
+	@Override
+	public Fil uploadToJira(Fil file) throws IOException {
+		
+		ObjectMapper mapper = new ObjectMapper();
+		mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+		
+		String temporaryFolder = "src/main/resources/attachments-jira";
+		String uriFilePath = temporaryFolder.concat("/").concat(file.getName());
+
+		try {
+
+			File fileSave = new File(temporaryFolder);
+			if (!fileSave.exists()) {
+				fileSave.mkdir();
+			}
+
+			File fileToSave = new File(uriFilePath);
+
+			try (FileOutputStream fos = new FileOutputStream(uriFilePath)) {
+				byte[] data = Base64.getDecoder().decode(file.getBase64());
+				fos.write(data);
+			}
+
+			log.info("[JIRA UPLOAD ATTACHMENT] uriFileLocalPath: {}", uriFilePath);
+
+			
+			Path path = fileToSave.toPath();
+		    String mimeType = Files.probeContentType(path);
+		    
+		    log.info("[mimeType] : {}", mimeType);
+		   
+			// upload to JIRA:
+			MediaType mediaType = MediaType.parse(mimeType);
+			
+			RequestBody requestBody = RequestBody.create(fileToSave, mediaType);
+
+			RequestBody formBody = new MultipartBody.Builder().setType(MultipartBody.FORM)
+					.addFormDataPart("file", file.getName(), requestBody)
+					.build();
+
+			HttpUrl.Builder urlBuilder = HttpUrl
+					.parse(jiraHost.concat("/").concat(jiraPath).replace(jiraIssueKey, file.getIssueKey()))
+					.newBuilder();
+
+			String url = String.valueOf(urlBuilder);	
+
+			log.info("[JIRA UPLOAD ATTACHMENT] REQUEST URL: {}", url);
+
+			Request request = new Request.Builder()
+					.url(url).post(formBody)
+					.addHeader("X-Atlassian-Token", "no-check")
+					.addHeader("Accept", "application/json")
+			        .addHeader("X-Atlassian-Token", "no-check")
+					.addHeader("Authorization", this.getJiraBasicAuthorization()).build();
+
+			log.info("[JIRA UPLOAD ATTACHMENT] REQUEST: {}", request);
+
+			Response response = null;
+			if(Boolean.valueOf(isUnsecureEnable)) {
+				response = okHttpClientUnsecure.newCall(request).execute();
+			}else {
+				response = okHttpClientSecure.newCall(request).execute();
+			}
+
+			log.info("[JIRA UPLOAD ATTACHMENT] RESPONSE: {} ", response);
+
+			String responseBody = response.body().string();
+			
+			List<ResponseUpload> list = mapper.readValue(responseBody, mapper.getTypeFactory().constructCollectionType(List.class, ResponseUpload.class));
+
+			log.info("response: " + list.get(0).getContent());
+			log.info("response: " + list.get(0).getFileName());
+			log.info("response: " + list.get(0).getId());
+			log.info("response: " + list.get(0).getMimeType());
+
+			log.info("[JIRA UPLOAD ATTACHMENT] RESPONSE Ok: {} ", responseBody);
+
+		} catch (IOException e) {
+			log.info("[JIRA UPLOAD ATTACHMENT] error: {} ", e);
+
+		} finally {
+			Files.delete(Paths.get(uriFilePath));
+			log.info("[JIRA UPLOAD ATTACHMENT] FILE DELETED OK: {} ", uriFilePath);
+		}
+
+		return null;
+	}
+	
+	private String getJiraBasicAuthorization() {
+		String auth = jiraClientId + ":" + jiraClientSecret;
+		byte[] encodedAuth = Base64.getEncoder().encode(auth.getBytes(StandardCharsets.US_ASCII));
+		String authorizationHeader = "Basic " + new String(encodedAuth);
+		return authorizationHeader;
 	}
 }

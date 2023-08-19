@@ -9,4 +9,5 @@ public class Fil {
 	private String size;
 	private String url;
 	private String folderName;
+	private String issueKey;
 }
