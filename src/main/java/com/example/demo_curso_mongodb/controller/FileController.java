@@ -1,9 +1,6 @@
 package com.example.demo_curso_mongodb.controller;
 
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Base64;
 import java.util.List;
 import java.util.UUID;
@@ -25,10 +22,6 @@ import com.example.demo_curso_mongodb.model.Fil;
 import com.example.demo_curso_mongodb.service.FileServiceInterface;
 
 import lombok.extern.slf4j.Slf4j;
-import okhttp3.HttpUrl;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.Response;
 
 @Slf4j
 @RestController
@@ -98,69 +91,24 @@ public class FileController {
 	    		System.out.println(e);
 	    	}
 	    
+	    
 	    return "true";
 	}
 	
-	@PostMapping("/download")
-	public void downloadFile(@RequestBody Fil file) throws Exception {	  
-	 
-		String bin = "124";
-		
-		byte[] bytes = bin.getBytes();
-
-		// returns byte[]
-		Base64.getEncoder().encode(bytes);
-
-		// returns String
-		Base64.getEncoder().encodeToString(bytes);
-	}
-	
-	@PostMapping("/downloadPrueba")
+	@PostMapping("/downloadFromUrl")
 	public Fil downloadFile1(@RequestBody Fil file) throws Exception {
-		fileService.download(file);
+		fileService.downloadImageWithRestTemplate(file);
 		return file;
 	}
 	
-	@PostMapping("/downloadPrueba2")
+	@PostMapping("/downloadFromUrl2")
 	public Fil downloadFile2(@RequestBody Fil file) throws Exception {
-		
-		OkHttpClient http = new OkHttpClient();
-		
-		HttpUrl.Builder urlBuilder = HttpUrl.parse(file.getUrl()).newBuilder();
-		String url = urlBuilder.toString();
-		
-		log.info("[URL COMMENT] URL: {}", url);
-				
-		Response response = null;
-		Request request = new Request.Builder().url(url).get().build();
-		
-		response = http.newCall(request).execute();
-		
-		log.info("[RESPONSE] BODY: {}", response.body().toString());
-		
-		
-		//ObjectMapper objectMapper = new ObjectMapper(); 
-		
-		//byte[] imageBytes = objectMapper.readValue(responseBody.bytes(), byte[].class);
-		
-		byte[] imageBytes = response.body().bytes();
-		
-		//byte[] imageBytes = response.body().source().readByteArray();
-		
-		String path3 = "C:/Users/aarteagq/Documents/imagenes/";
-	    Path destinationFile = Paths.get(path3, file.getName());
-		Files.write(destinationFile, imageBytes);
-		
-		String base64 = Base64.getEncoder().encodeToString(imageBytes);
-		//String base64 = new String(Base64.getEncoder().encode(imageBytes), "UTF-8");
-		
-		file.setBase64(base64);
-		return file;
+		return fileService.downloadImageWithHttp3(file);
 	}
 	
-	@PostMapping("/downloadPrueba3")
+	@PostMapping("/downloadFromUrlTa")
 	public Fil downloadFile3(@RequestBody Fil file) throws Exception {
-		return fileService.donwloadWithHttp3(file);
+		return fileService.donwloadFromTaWithHttp3(file);
 	}
 	
 	@PostMapping("/uploadAzure")
@@ -185,6 +133,11 @@ public class FileController {
 	
 	@PostMapping("/uploadJira")
 	public Fil uploadToJira(@RequestBody Fil file) throws Exception {
-		return fileService.uploadToJira(file);
+		return fileService.uploadToJiraWithHttp3(file);
+	}
+	
+	@PostMapping("/downloadJira")
+	public Fil downloadJira(@RequestBody Fil file) throws Exception {
+		return fileService.downloadToJiraWithHttp3(file);
 	}
 }

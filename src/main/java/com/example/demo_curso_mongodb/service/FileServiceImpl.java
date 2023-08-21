@@ -89,11 +89,14 @@ public class FileServiceImpl extends FileClient implements FileServiceInterface 
 	private static final String ATTACHMENT_NAME = "attachments-";
 
 	@Override
-	public Fil download(Fil file) {
+	public Fil downloadImageWithRestTemplate(Fil file) {
 		RestTemplate restTemplate = new RestTemplate();
+		
+		String urlExample = "http://img.championat.com/news/big/l/c/ujejn-runi_1439911080563855663.jpg";
+		
+		log.info(urlExample);
 
-		String url = "http://img.championat.com/news/big/l/c/ujejn-runi_1439911080563855663.jpg";
-		byte[] imageBytes = restTemplate.getForObject(url, byte[].class);
+		byte[] imageBytes = restTemplate.getForObject(file.getUrl(), byte[].class);
 
 		String path3 = "C:/Users/aarteagq/Documents/imagenes/";
 		Path destinationFile = Paths.get(path3, file.getName());
@@ -108,7 +111,44 @@ public class FileServiceImpl extends FileClient implements FileServiceInterface 
 		String base64 = Base64.getEncoder().encodeToString(imageBytes);
 
 		file.setBase64(base64);
-		return null;
+		return file;
+	}
+	
+	@Override
+	public Fil downloadImageWithHttp3(Fil file) throws IOException {
+
+		OkHttpClient http = new OkHttpClient();
+		
+		HttpUrl.Builder urlBuilder = HttpUrl.parse(file.getUrl()).newBuilder();
+		String url = urlBuilder.toString();
+		
+		log.info("[URL COMMENT] URL: {}", url);
+				
+		Response response = null;
+		Request request = new Request.Builder().url(url).get().build();
+		
+		response = http.newCall(request).execute();
+		
+		log.info("[RESPONSE] BODY: {}", response.body().toString());
+		
+		
+		//ObjectMapper objectMapper = new ObjectMapper(); 
+		
+		//byte[] imageBytes = objectMapper.readValue(responseBody.bytes(), byte[].class);
+		
+		byte[] imageBytes = response.body().bytes();
+		
+		//byte[] imageBytes = response.body().source().readByteArray();
+		
+		String path3 = "C:/Users/aarteagq/Documents/imagenes/";
+	    Path destinationFile = Paths.get(path3, file.getName());
+		Files.write(destinationFile, imageBytes);
+		
+		String base64 = Base64.getEncoder().encodeToString(imageBytes);
+		//String base64 = new String(Base64.getEncoder().encode(imageBytes), "UTF-8");
+		
+		file.setBase64(base64);
+		return file;
 	}
 
 	@Override
@@ -187,7 +227,7 @@ public class FileServiceImpl extends FileClient implements FileServiceInterface 
 	}
 
 	@Override
-	public Fil donwloadWithHttp3(Fil file) throws IOException {
+	public Fil donwloadFromTaWithHttp3(Fil file) throws IOException {
 
 		OkHttpClient http = new OkHttpClient.Builder()
 				.hostnameVerifier((hostname, session) -> true)
@@ -419,7 +459,7 @@ public class FileServiceImpl extends FileClient implements FileServiceInterface 
 	}
 
 	@Override
-	public Fil uploadToJira(Fil file) throws IOException {
+	public Fil uploadToJiraWithHttp3(Fil file) throws IOException {
 		
 		ObjectMapper mapper = new ObjectMapper();
 		mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
@@ -489,9 +529,8 @@ public class FileServiceImpl extends FileClient implements FileServiceInterface 
 			List<ResponseUpload> list = mapper.readValue(responseBody, mapper.getTypeFactory().constructCollectionType(List.class, ResponseUpload.class));
 
 			log.info("response: " + list.get(0).getContent());
-			log.info("response: " + list.get(0).getFileName());
-			log.info("response: " + list.get(0).getId());
-			log.info("response: " + list.get(0).getMimeType());
+			
+			file.setUrl(list.get(0).getContent());
 
 			log.info("[JIRA UPLOAD ATTACHMENT] RESPONSE Ok: {} ", responseBody);
 
@@ -502,8 +541,8 @@ public class FileServiceImpl extends FileClient implements FileServiceInterface 
 			Files.delete(Paths.get(uriFilePath));
 			log.info("[JIRA UPLOAD ATTACHMENT] FILE DELETED OK: {} ", uriFilePath);
 		}
-
-		return null;
+		
+		return file;
 	}
 	
 	private String getJiraBasicAuthorization() {
@@ -511,5 +550,45 @@ public class FileServiceImpl extends FileClient implements FileServiceInterface 
 		byte[] encodedAuth = Base64.getEncoder().encode(auth.getBytes(StandardCharsets.US_ASCII));
 		String authorizationHeader = "Basic " + new String(encodedAuth);
 		return authorizationHeader;
+	}
+	
+	@Override
+	public Fil downloadToJiraWithHttp3(Fil file) throws IOException {
+		
+		HttpUrl.Builder urlBuilder = HttpUrl.parse(file.getUrl()).newBuilder();
+		String url = urlBuilder.toString();
+
+		log.info("[URL COMMENT] URL: {}", url);
+
+		Response response = null;
+
+		String basicAuthorization = this.getJiraBasicAuthorization();
+
+		Request request = new Request.Builder().url(url).get()
+				.header("Authorization", basicAuthorization)
+				.build();
+
+		log.info("[REQUEST] REQUEST: {}", request);
+
+		response = okHttpClientUnsecure.newCall(request).execute();
+
+		log.info("[RESPONSE] RESPONSE: {}", response);
+		
+		log.info("[RESPONSE] RESPONSE BODY: {}", response.body());
+		log.info("[RESPONSE] RESPONSE code: {}", response.code());
+
+
+		byte[] imageBytes = response.body().bytes();
+
+		// Save image in local
+		String path3 = "C:/Users/aarteagq/Documents/imagenes/";
+		Path destinationFile = Paths.get(path3, file.getName());
+		Files.write(destinationFile, imageBytes);
+		// Save image in local
+
+		String base64 = Base64.getEncoder().encodeToString(imageBytes);
+		file.setBase64(base64);
+
+		return file;
 	}
 }
