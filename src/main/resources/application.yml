@@ -4,6 +4,17 @@ spring:
   data:
     mongodb:
       uri: mongodb://localhost:27017/bd-demo
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      bootstrap-servers: localhost:9092
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      group-id: myGroup
+      properties:
+        allow.auto.create.topics: false
+    topic:
+      consumer: test-topic
 
 server:
   port: 8081

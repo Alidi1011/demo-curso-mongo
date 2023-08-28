@@ -247,6 +247,7 @@ public class FileServiceImpl extends FileClient implements FileServiceInterface 
 
 		Request request = new Request.Builder().url(url).get().header("Authorization", basicAuthorization)
 				.header("Accept", "application/octet-stream").build();
+				//.header("Content-Disposition", "archivo.xlsx").build();
 
 		log.info("[REQUEST] REQUEST: {}", request);
 
@@ -258,7 +259,8 @@ public class FileServiceImpl extends FileClient implements FileServiceInterface 
 
 		// Save image in local
 		String path3 = "C:/Users/aarteagq/Documents/imagenes/";
-		Path destinationFile = Paths.get(path3, file.getName());
+		//Path destinationFile = Paths.get(path3, file.getName());
+		Path destinationFile = Paths.get(path3, "picture.png");
 		Files.write(destinationFile, imageBytes);
 		// Save image in local
 
@@ -464,19 +466,29 @@ public class FileServiceImpl extends FileClient implements FileServiceInterface 
 		ObjectMapper mapper = new ObjectMapper();
 		mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 		
-		String temporaryFolder = "src/main/resources/attachments-jira";
-		String uriFilePath = temporaryFolder.concat("/").concat(file.getName());
+		String temporaryFolder = "src/main/resources/attachments-jira/";
+		
+		log.info("[JIRA UPLOAD ATTACHMENT] uriTemporaryFolder: {}", temporaryFolder);
+		
+		String tDir = System.getProperty("java.io.tmpdir");
+		log.info("tdir: " + tDir);
+		
+		//String uriFilePath = tDir.concat(file.getName()+ ".jpg");
+		String uriFilePath = tDir.concat(file.getName());
 
 		try {
-
-			File fileSave = new File(temporaryFolder);
-			if (!fileSave.exists()) {
-				fileSave.mkdir();
-			}
-
+			//File fileSave = new File(temporaryFolder);
+			//if (!fileSave.exists()) {
+				//fileSave.mkdir();
+			//}
+			
+			//Path temp = Files.createTempFile( "image", ".jpg" );
+			//log.info("temp file: " + temp);
+			//temp.toFile().deleteOnExit();
+			
 			File fileToSave = new File(uriFilePath);
 
-			try (FileOutputStream fos = new FileOutputStream(uriFilePath)) {
+			try (FileOutputStream fos = new FileOutputStream(fileToSave)) {
 				byte[] data = Base64.getDecoder().decode(file.getBase64());
 				fos.write(data);
 			}
@@ -490,12 +502,17 @@ public class FileServiceImpl extends FileClient implements FileServiceInterface 
 		    log.info("[mimeType] : {}", mimeType);
 		   
 			// upload to JIRA:
-			MediaType mediaType = MediaType.parse(mimeType);
+			//MediaType mediaType = MediaType.parse(mimeType);
 			
-			RequestBody requestBody = RequestBody.create(fileToSave, mediaType);
+			//RequestBody requestBody = RequestBody.create(fileToSave, mediaType);
+						
+			byte[] data = Base64.getDecoder().decode(file.getBase64());
+			RequestBody requestBody = RequestBody.create(data);
+
 
 			RequestBody formBody = new MultipartBody.Builder().setType(MultipartBody.FORM)
-					.addFormDataPart("file", file.getName(), requestBody)
+					//.addFormDataPart("file", file.getName() + ".jpg", requestBody)
+					.addFormDataPart("file", file.getName() , requestBody)
 					.build();
 
 			HttpUrl.Builder urlBuilder = HttpUrl
@@ -538,7 +555,7 @@ public class FileServiceImpl extends FileClient implements FileServiceInterface 
 			log.info("[JIRA UPLOAD ATTACHMENT] error: {} ", e);
 
 		} finally {
-			Files.delete(Paths.get(uriFilePath));
+			//Files.delete(Paths.get(uriFilePath));
 			log.info("[JIRA UPLOAD ATTACHMENT] FILE DELETED OK: {} ", uriFilePath);
 		}
 		
