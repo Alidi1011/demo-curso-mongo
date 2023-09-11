@@ -24,7 +24,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
-import com.example.demo_curso_mongodb.model.Fil;
+import com.example.demo_curso_mongodb.model.FileProcess;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.microsoft.azure.storage.CloudStorageAccount;
@@ -34,6 +34,7 @@ import com.microsoft.azure.storage.blob.CloudBlobContainer;
 import com.microsoft.azure.storage.blob.CloudBlockBlob;
 
 import lombok.extern.slf4j.Slf4j;
+import okhttp3.Credentials;
 import okhttp3.FormBody;
 import okhttp3.HttpUrl;
 import okhttp3.MediaType;
@@ -57,10 +58,10 @@ public class FileServiceImpl extends FileClient implements FileServiceInterface 
 	private String pathName;
 
 	@Value("${ta.client-id}")
-	private String clientId;
+	private String taClientId;
 
 	@Value("${ta.client-secret}")
-	private String clientSecret;
+	private String taClientSecret;
 
 	@Value("${ta.url-token}")
 	private String urlToken;
@@ -89,7 +90,7 @@ public class FileServiceImpl extends FileClient implements FileServiceInterface 
 	private static final String ATTACHMENT_NAME = "attachments-";
 
 	@Override
-	public Fil downloadImageWithRestTemplate(Fil file) {
+	public FileProcess downloadImageWithRestTemplate(FileProcess file) {
 		RestTemplate restTemplate = new RestTemplate();
 		
 		String urlExample = "http://img.championat.com/news/big/l/c/ujejn-runi_1439911080563855663.jpg";
@@ -115,7 +116,7 @@ public class FileServiceImpl extends FileClient implements FileServiceInterface 
 	}
 	
 	@Override
-	public Fil downloadImageWithHttp3(Fil file) throws IOException {
+	public FileProcess downloadImageWithHttp3(FileProcess file) throws IOException {
 
 		OkHttpClient http = new OkHttpClient();
 		
@@ -152,7 +153,7 @@ public class FileServiceImpl extends FileClient implements FileServiceInterface 
 	}
 
 	@Override
-	public Fil uploadWithAzure(Fil file) throws InvalidKeyException, URISyntaxException, StorageException, IOException {
+	public FileProcess uploadWithAzure(FileProcess file) throws InvalidKeyException, URISyntaxException, StorageException, IOException {
 
 		CloudStorageAccount storageAccount = CloudStorageAccount.parse(this.storageConnection);
 
@@ -179,7 +180,7 @@ public class FileServiceImpl extends FileClient implements FileServiceInterface 
 		log.info("blockBlob.length: " + length);
 		log.info("blockBlob.properties.length: " + blockBlob.getProperties().getLength());
 
-		Fil fileResponse = new Fil();
+		FileProcess fileResponse = new FileProcess();
 		fileResponse.setUrl(blockBlob.getUri().toString());
 		fileResponse.setName(imageName);
 
@@ -187,7 +188,7 @@ public class FileServiceImpl extends FileClient implements FileServiceInterface 
 	}
 
 	@Override
-	public Fil downloadWithAzure(Fil file) throws Exception {
+	public FileProcess downloadWithAzure(FileProcess file) throws Exception {
 
 		CloudStorageAccount storageAccount = CloudStorageAccount.parse(this.storageConnection);
 		CloudBlobClient blobClient = storageAccount.createCloudBlobClient();
@@ -195,7 +196,7 @@ public class FileServiceImpl extends FileClient implements FileServiceInterface 
 		CloudBlockBlob blockBlob1 = new CloudBlockBlob(URI.create(file.getUrl()));
 		CloudBlockBlob blockBlob = blobContainer.getBlockBlobReference(blockBlob1.getName());
 
-		Fil fileResponse = null;
+		FileProcess fileResponse = null;
 
 		if (blockBlob.exists()) {
 			// save in local path
@@ -215,7 +216,7 @@ public class FileServiceImpl extends FileClient implements FileServiceInterface 
 			log.info("URI: " + blockBlob.getUri());
 			log.info("getUrl enviado: " + file.getUrl());
 
-			fileResponse = new Fil();
+			fileResponse = new FileProcess();
 			fileResponse.setBase64(base64);
 			fileResponse.setName(file.getName());
 		} else {
@@ -227,7 +228,7 @@ public class FileServiceImpl extends FileClient implements FileServiceInterface 
 	}
 
 	@Override
-	public Fil donwloadFromTaWithHttp3(Fil file) throws IOException {
+	public FileProcess donwloadFromTaWithHttp3(FileProcess file) throws IOException {
 
 		OkHttpClient http = new OkHttpClient.Builder()
 				.hostnameVerifier((hostname, session) -> true)
@@ -279,7 +280,7 @@ public class FileServiceImpl extends FileClient implements FileServiceInterface 
 				// .add("client_secret", clientSecret)
 				.build();
 
-		String auth = clientId + ":" + clientSecret;
+		String auth = taClientId + ":" + taClientSecret;
 		byte[] encodedAuth = Base64.getEncoder().encode(auth.getBytes(StandardCharsets.US_ASCII));
 		String authHeader = "Basic " + new String(encodedAuth);
 		log.info("AuthHeader: " + authHeader);
@@ -310,14 +311,16 @@ public class FileServiceImpl extends FileClient implements FileServiceInterface 
 	}
 
 	private String getBasicAuthorization() {
-		String auth = clientId + ":" + clientSecret;
+		String credentials = Credentials.basic(taClientId, taClientSecret);
+		log.info("CREDENTIALS: " + credentials);
+		String auth = taClientId + ":" + taClientSecret;
 		byte[] encodedAuth = Base64.getEncoder().encode(auth.getBytes(StandardCharsets.US_ASCII));
 		String authorizationHeader = "Basic " + new String(encodedAuth);
-		return authorizationHeader;
+		return credentials;
 	}
 
 	@Override
-	public Fil uploadWithAzureInZip(Fil file)
+	public FileProcess uploadWithAzureInZip(FileProcess file)
 			throws InvalidKeyException, URISyntaxException, StorageException, IOException {
 		UUID uuid = UUID.randomUUID();
 
@@ -376,7 +379,7 @@ public class FileServiceImpl extends FileClient implements FileServiceInterface 
 		log.info("blockBlob.name: " + blockBlob.getName());
 		log.info("blockBlob.properties.length: " + blockBlob.getProperties().getLength());
 
-		Fil fileResponse = new Fil();
+		FileProcess fileResponse = new FileProcess();
 		fileResponse.setUrl(blockBlob.getUri().toString());
 		fileResponse.setName(imageName);
 
@@ -384,9 +387,9 @@ public class FileServiceImpl extends FileClient implements FileServiceInterface 
 	}
 
 	@Override
-	public Fil uploadWithAzureInZip2(List<Fil> files) {
+	public FileProcess uploadWithAzureInZip2(List<FileProcess> files) {
 
-		Fil fileResponse = new Fil();
+		FileProcess fileResponse = new FileProcess();
 		String folderName = "PANGEA-7777";
 		String attachmentZipName = ATTACHMENT_NAME.concat(folderName.toLowerCase()).concat(".zip");
 
@@ -418,7 +421,7 @@ public class FileServiceImpl extends FileClient implements FileServiceInterface 
 			ZipOutputStream zipOut = new ZipOutputStream(fos);
 
 			Integer index = 0;
-			for (Fil file : files) {
+			for (FileProcess file : files) {
 				index++;
 				String imageName = index.toString().concat("-").concat(file.getName());
 				String base64 = file.getBase64();
@@ -461,7 +464,7 @@ public class FileServiceImpl extends FileClient implements FileServiceInterface 
 	}
 
 	@Override
-	public Fil uploadToJiraWithHttp3(Fil file) throws IOException {
+	public FileProcess uploadToJiraWithHttp3(FileProcess file) throws IOException {
 		
 		ObjectMapper mapper = new ObjectMapper();
 		mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
@@ -570,7 +573,7 @@ public class FileServiceImpl extends FileClient implements FileServiceInterface 
 	}
 	
 	@Override
-	public Fil downloadToJiraWithHttp3(Fil file) throws IOException {
+	public FileProcess downloadToJiraWithHttp3(FileProcess file) throws IOException {
 		
 		HttpUrl.Builder urlBuilder = HttpUrl.parse(file.getUrl()).newBuilder();
 		String url = urlBuilder.toString();
@@ -605,6 +608,47 @@ public class FileServiceImpl extends FileClient implements FileServiceInterface 
 
 		String base64 = Base64.getEncoder().encodeToString(imageBytes);
 		file.setBase64(base64);
+
+		return file;
+	}
+	
+	@Override
+	public FileProcess donwloadFromTaMetadataWithHttp3(FileProcess file) throws IOException {
+
+		OkHttpClient http = new OkHttpClient.Builder()
+				.hostnameVerifier((hostname, session) -> true)
+				.connectTimeout(Long.parseLong("50000"), TimeUnit.SECONDS).build();
+		
+		log.info("HOSTNAME VERIFIER: " + false);
+
+		HttpUrl.Builder urlBuilder = HttpUrl.parse(file.getUrl()).newBuilder();
+		String url = urlBuilder.toString();
+
+		log.info("[URL COMMENT] URL: {}", url);
+
+		Response response = null;
+
+		String basicAuthorization = this.getBasicAuthorization();
+
+		Request request = new Request.Builder().url(url).get()
+				.header("Authorization", basicAuthorization).build();
+
+		log.info("[REQUEST] REQUEST: {}", request);
+
+		response = http.newCall(request).execute();
+
+		log.info("[RESPONSE] BODY: {}", response.body().toString());
+		
+		String jsonResponse = response.body().string();
+		
+		ObjectMapper objectMapper = new ObjectMapper();
+  
+        String fileName = objectMapper.readTree(jsonResponse.toString()).get("name").asText();
+        String mediaType = objectMapper.readTree(jsonResponse.toString()).get("mediaType").asText();
+
+        
+		file.setName(fileName);
+		file.setMimeType(mediaType);
 
 		return file;
 	}

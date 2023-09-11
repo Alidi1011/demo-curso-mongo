@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.example.demo_curso_mongodb.model.Fil;
+import com.example.demo_curso_mongodb.model.FileProcess;
 import com.example.demo_curso_mongodb.service.FileServiceInterface;
 
 import lombok.extern.slf4j.Slf4j;
@@ -36,7 +36,7 @@ public class FileController {
 
 	
 	@PostMapping("/upload")
-	public String uploadFile(@RequestBody Fil file) throws Exception {
+	public String uploadFile(@RequestBody FileProcess file) throws Exception {
 	   
 	    byte[] decodedFile = Base64.getDecoder().decode(file.getBase64().getBytes(StandardCharsets.UTF_8));
 	 
@@ -96,48 +96,53 @@ public class FileController {
 	}
 	
 	@PostMapping("/downloadFromUrl")
-	public Fil downloadFile1(@RequestBody Fil file) throws Exception {
+	public FileProcess downloadFile1(@RequestBody FileProcess file) throws Exception {
 		fileService.downloadImageWithRestTemplate(file);
 		return file;
 	}
 	
 	@PostMapping("/downloadFromUrl2")
-	public Fil downloadFile2(@RequestBody Fil file) throws Exception {
+	public FileProcess downloadFile2(@RequestBody FileProcess file) throws Exception {
 		return fileService.downloadImageWithHttp3(file);
 	}
 	
 	@PostMapping("/downloadFromUrlTa")
-	public Fil downloadFile3(@RequestBody Fil file) throws Exception {
+	public FileProcess downloadFile3(@RequestBody FileProcess file) throws Exception {
 		return fileService.donwloadFromTaWithHttp3(file);
 	}
 	
+	@PostMapping("/downloadFromUrlMetadataTa")
+	public FileProcess downloadFileMetadata(@RequestBody FileProcess file) throws Exception {
+		return fileService.donwloadFromTaMetadataWithHttp3(file);
+	}
+	
 	@PostMapping("/uploadAzure")
-	public Fil uploadWithAzure(@RequestBody Fil file) throws Exception {
+	public FileProcess uploadWithAzure(@RequestBody FileProcess file) throws Exception {
 		return fileService.uploadWithAzure(file);
 	}
 	
 	@PostMapping("/uploadAzureInZip")
-	public Fil uploadWithAzureInZip(@RequestBody Fil file) throws Exception {
+	public FileProcess uploadWithAzureInZip(@RequestBody FileProcess file) throws Exception {
 		return fileService.uploadWithAzureInZip(file);
 	}
 	
 	@PostMapping("/uploadAzureInZip2")
-	public Fil uploadWithAzureInZip(@RequestBody List<Fil> file) throws Exception {
+	public FileProcess uploadWithAzureInZip(@RequestBody List<FileProcess> file) throws Exception {
 		return fileService.uploadWithAzureInZip2(file);
 	}
 	
 	@PostMapping("/downloadAzure")
-	public Fil downloadAzure(@RequestBody Fil file) throws Exception {
+	public FileProcess downloadAzure(@RequestBody FileProcess file) throws Exception {
 		return fileService.downloadWithAzure(file);
 	}
 	
 	@PostMapping("/uploadJira")
-	public Fil uploadToJira(@RequestBody Fil file) throws Exception {
+	public FileProcess uploadToJira(@RequestBody FileProcess file) throws Exception {
 		return fileService.uploadToJiraWithHttp3(file);
 	}
 	
 	@PostMapping("/downloadJira")
-	public Fil downloadJira(@RequestBody Fil file) throws Exception {
+	public FileProcess downloadJira(@RequestBody FileProcess file) throws Exception {
 		return fileService.downloadToJiraWithHttp3(file);
 	}
 }

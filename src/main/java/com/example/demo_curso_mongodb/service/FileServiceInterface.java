@@ -5,17 +5,18 @@ import java.net.URISyntaxException;
 import java.security.InvalidKeyException;
 import java.util.List;
 
-import com.example.demo_curso_mongodb.model.Fil;
+import com.example.demo_curso_mongodb.model.FileProcess;
 import com.microsoft.azure.storage.StorageException;
 
 public interface FileServiceInterface {
-	public Fil downloadImageWithRestTemplate(Fil file);
-	public Fil downloadImageWithHttp3(Fil file) throws IOException;
-	public Fil uploadWithAzure(Fil file) throws InvalidKeyException, URISyntaxException, StorageException, IOException;
-	public Fil downloadWithAzure(Fil file) throws Exception;
-	public Fil donwloadFromTaWithHttp3(Fil file) throws Exception;
-	public Fil uploadWithAzureInZip(Fil file) throws InvalidKeyException, URISyntaxException, StorageException, IOException;
-	public Fil uploadWithAzureInZip2(List<Fil> file);
-	public Fil uploadToJiraWithHttp3(Fil file) throws IOException;
-	public Fil downloadToJiraWithHttp3(Fil file) throws Exception;
+	public FileProcess downloadImageWithRestTemplate(FileProcess file);
+	public FileProcess downloadImageWithHttp3(FileProcess file) throws IOException;
+	public FileProcess uploadWithAzure(FileProcess file) throws InvalidKeyException, URISyntaxException, StorageException, IOException;
+	public FileProcess downloadWithAzure(FileProcess file) throws Exception;
+	public FileProcess donwloadFromTaWithHttp3(FileProcess file) throws Exception;
+	public FileProcess donwloadFromTaMetadataWithHttp3(FileProcess file) throws Exception;
+	public FileProcess uploadWithAzureInZip(FileProcess file) throws InvalidKeyException, URISyntaxException, StorageException, IOException;
+	public FileProcess uploadWithAzureInZip2(List<FileProcess> file);
+	public FileProcess uploadToJiraWithHttp3(FileProcess file) throws IOException;
+	public FileProcess downloadToJiraWithHttp3(FileProcess file) throws Exception;
 }
